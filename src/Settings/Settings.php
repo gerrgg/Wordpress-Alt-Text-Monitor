@@ -1,0 +1,70 @@
+<?php
+declare(strict_types=1);
+
+namespace Floodlight\AltTextMonitor\Settings;
+
+final class Settings {
+  private const OPT_SITE = 'fatm_settings';
+  private const OPT_NETWORK = 'fatm_network_settings';
+
+  public static function get_site(): array {
+    $defaults = Defaults::site();
+    $saved = get_option(self::OPT_SITE, []);
+    if (!is_array($saved)) {
+      $saved = [];
+    }
+    return self::deep_merge($defaults, $saved);
+  }
+
+  public static function set_site(array $data): void {
+    update_option(self::OPT_SITE, $data, false);
+  }
+
+  public static function get_network(): array {
+    $defaults = Defaults::network();
+    $saved = is_multisite() ? get_site_option(self::OPT_NETWORK, []) : [];
+    if (!is_array($saved)) {
+      $saved = [];
+    }
+    return self::deep_merge($defaults, $saved);
+  }
+
+  public static function set_network(array $data): void {
+    if (!is_multisite()) {
+      // On non-multisite installs, silently ignore.
+      return;
+    }
+    update_site_option(self::OPT_NETWORK, $data);
+  }
+
+  public static function get_effective(): array {
+    $site = self::get_site();
+
+    $use_network = (bool) ($site['use_network_defaults'] ?? false);
+    if (!is_multisite() || !$use_network) {
+      return $site;
+    }
+
+    $network = self::get_network();
+
+    // Merge network defaults with site settings, but remove the site flag from merge collisions.
+    $site_copy = $site;
+    unset($site_copy['use_network_defaults']);
+
+    $effective = self::deep_merge($network, $site_copy);
+    $effective['use_network_defaults'] = true;
+
+    return $effective;
+  }
+
+  private static function deep_merge(array $base, array $overrides): array {
+    foreach ($overrides as $key => $val) {
+      if (is_array($val) && isset($base[$key]) && is_array($base[$key])) {
+        $base[$key] = self::deep_merge($base[$key], $val);
+      } else {
+        $base[$key] = $val;
+      }
+    }
+    return $base;
+  }
+}
