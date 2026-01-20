@@ -30,6 +30,8 @@ require_once FATM_PATH . 'src/Findings/Findings.php';
 require_once FATM_PATH . 'src/Jobs/Jobs.php';
 require_once FATM_PATH . 'src/Scan/MediaScanner.php';
 require_once FATM_PATH . 'src/Admin/Actions.php';
+require_once FATM_PATH . 'src/Admin/Pages/ResultsPage.php';
+
 
 /**
  * Settings

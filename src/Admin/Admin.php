@@ -7,18 +7,21 @@ use Floodlight\AltTextMonitor\Admin\Pages\DashboardPage;
 use Floodlight\AltTextMonitor\Admin\Pages\SettingsPage;
 use Floodlight\AltTextMonitor\Admin\Pages\NetworkDashboardPage;
 use Floodlight\AltTextMonitor\Admin\Pages\NetworkSettingsPage;
+use Floodlight\AltTextMonitor\Admin\Pages\ResultsPage;
 
 final class Admin {
   private DashboardPage $dashboard;
   private SettingsPage $settings;
   private NetworkDashboardPage $network_dashboard;
   private NetworkSettingsPage $network_settings;
+  private ResultsPage $results;
 
   public function __construct() {
     $this->dashboard = new DashboardPage();
     $this->settings = new SettingsPage();
     $this->network_dashboard = new NetworkDashboardPage();
     $this->network_settings = new NetworkSettingsPage();
+    $this->results = new ResultsPage();
   }
 
   public function register_site_menu(): void {
@@ -40,6 +43,16 @@ final class Admin {
       'fatm-settings',
       [$this->settings, 'render']
     );
+
+    add_submenu_page(
+      'fatm',
+      'Results',
+      'Results',
+      'manage_options',
+      'fatm-results',
+      [$this->results, 'render']
+    );
+
   }
 
   public function register_network_menu(): void {
@@ -65,5 +78,7 @@ final class Admin {
       'fatm-network-settings',
       [$this->network_settings, 'render']
     );
+
+    
   }
 }

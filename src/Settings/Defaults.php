@@ -25,6 +25,8 @@ final class Defaults {
       'rules' => [
         'missing_alt_error' => true,
         'min_alt_length' => 5,
+        'detect_filename' => true,
+        'generic_words' => 'image,photo,picture,graphic,logo,icon,banner,untitled,placeholder',
       ],
     ];
   }

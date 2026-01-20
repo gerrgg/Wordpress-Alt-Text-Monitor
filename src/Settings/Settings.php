@@ -45,16 +45,12 @@ final class Settings {
       return $site;
     }
 
+    // When inheriting, use network settings as the effective rules/scope.
+    // Preserve the flag so UI/debug reflects inheritance.
     $network = self::get_network();
+    $network['use_network_defaults'] = true;
 
-    // Merge network defaults with site settings, but remove the site flag from merge collisions.
-    $site_copy = $site;
-    unset($site_copy['use_network_defaults']);
-
-    $effective = self::deep_merge($network, $site_copy);
-    $effective['use_network_defaults'] = true;
-
-    return $effective;
+    return $network;
   }
 
   private static function deep_merge(array $base, array $overrides): array {

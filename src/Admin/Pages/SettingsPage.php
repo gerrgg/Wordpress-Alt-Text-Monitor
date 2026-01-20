@@ -9,20 +9,22 @@ final class SettingsPage {
   private const NONCE_ACTION = 'fatm_save_site_settings';
 
   public function render(): void {
-    if (!current_user_can('manage_options')) {
-      wp_die('You do not have permission to access this page.');
+    if (!\current_user_can('manage_options')) {
+      \wp_die('You do not have permission to access this page.');
     }
 
     $saved_notice = '';
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-      check_admin_referer(self::NONCE_ACTION);
+      \check_admin_referer(self::NONCE_ACTION);
 
       $use_network_defaults = isset($_POST['use_network_defaults']) ? (bool) $_POST['use_network_defaults'] : false;
 
-      // Minimal Step 1 fields (expand later)
-      $rules_missing_alt_error = isset($_POST['rules_missing_alt_error']) ? (bool) $_POST['rules_missing_alt_error'] : true;
+      // site rules
+      $rules_missing_alt_error = !empty($_POST['rules_missing_alt_error']);
       $rules_min_alt_length = isset($_POST['rules_min_alt_length']) ? max(0, (int) $_POST['rules_min_alt_length']) : 5;
+      $detect_filename = !empty($_POST['rules_detect_filename']);
+      $generic_words = isset($_POST['rules_generic_words']) ? sanitize_text_field((string) $_POST['rules_generic_words']) : '';
 
       $scan_post_types = isset($_POST['scan_post_types']) && is_array($_POST['scan_post_types'])
         ? array_values(array_map('sanitize_key', $_POST['scan_post_types']))
@@ -36,6 +38,8 @@ final class SettingsPage {
         'rules' => [
           'missing_alt_error' => $rules_missing_alt_error,
           'min_alt_length' => $rules_min_alt_length,
+          'detect_filename' => $detect_filename,
+          'generic_words' => $generic_words,
         ],
       ];
 
@@ -49,6 +53,11 @@ final class SettingsPage {
 
     $all_post_types = get_post_types(['public' => true], 'objects');
     $site_use_network = (bool) ($site['use_network_defaults'] ?? false);
+
+    $missing_alt_error = (bool) (($site['rules']['missing_alt_error'] ?? true));
+    $min_alt_length = (int) (($site['rules']['min_alt_length'] ?? 5));
+    $detect_filename_val = (bool) (($site['rules']['detect_filename'] ?? true));
+    $generic_words_val = (string) (($site['rules']['generic_words'] ?? ''));
 
     echo '<div class="wrap">';
     echo '<h1>Alt Text Monitor Settings</h1>';
@@ -89,16 +98,29 @@ final class SettingsPage {
     echo '<th scope="row">Rules</th>';
     echo '<td>';
 
-    $missing_alt_error = (bool) (($site['rules']['missing_alt_error'] ?? true));
-    $min_alt_length = (int) (($site['rules']['min_alt_length'] ?? 5));
-
     echo '<label style="display:block;margin:2px 0;">';
+    echo '<input type="hidden" name="rules_missing_alt_error" value="0" />';
     echo '<input type="checkbox" name="rules_missing_alt_error" value="1" ' . checked(true, $missing_alt_error, false) . ' />';
+
     echo ' Missing alt is an error';
     echo '</label>';
 
+    echo '<label style="display:block;margin:12px 0 2px;">Generic alt words (comma-separated)</label>';
+    echo '<input type="text" name="rules_generic_words" style="width:420px;max-width:100%;" value="' . esc_attr($generic_words_val) . '" />';
+    echo '<p class="description">Example: image, photo, logo</p>';
+
+    echo '<label style="display:block;margin:10px 0 2px;">Filename detection</label>';
+    echo '<label>';
+    echo '<input type="hidden" name="rules_detect_filename" value="0" />';
+    echo '<input type="checkbox" name="rules_detect_filename" value="1" ' . checked(true, $detect_filename_val, false) . ' />';
+
+    echo ' Flag alts that look like filenames or camera names (IMG_1234, DSC_…, .jpg, hex strings)';
+    echo '</label>';
+
+
     echo '<label style="display:block;margin:10px 0 2px;">Minimum alt length (warning threshold)</label>';
     echo '<input type="number" name="rules_min_alt_length" min="0" step="1" value="' . esc_attr((string) $min_alt_length) . '" />';
+
 
     echo '</td>';
     echo '</tr>';
@@ -112,11 +134,11 @@ final class SettingsPage {
     echo '<hr />';
     echo '<h2>Debug preview</h2>';
     echo '<h3>Site</h3>';
-    echo '<pre style="background:#fff;padding:12px;border:1px solid #ccd0d4;max-width:900px;overflow:auto;">' . esc_html(print_r($site, true)) . '</pre>';
+    echo '<pre style="background: #fff;padding:12px;border:1px solid #ccd0d4;max-width:900px;overflow:auto;">' . esc_html(wp_json_encode($site, JSON_PRETTY_PRINT)) . '</pre>';
     echo '<h3>Network</h3>';
-    echo '<pre style="background:#fff;padding:12px;border:1px solid #ccd0d4;max-width:900px;overflow:auto;">' . esc_html(print_r($network, true)) . '</pre>';
+    echo '<pre style="background: #fff;padding:12px;border:1px solid #ccd0d4;max-width:900px;overflow:auto;">' . esc_html(wp_json_encode($network, JSON_PRETTY_PRINT)) . '</pre>';
     echo '<h3>Effective</h3>';
-    echo '<pre style="background:#fff;padding:12px;border:1px solid #ccd0d4;max-width:900px;overflow:auto;">' . esc_html(print_r($effective, true)) . '</pre>';
+    echo '<pre style="background: #fff;padding:12px;border:1px solid #ccd0d4;max-width:900px;overflow:auto;">' . esc_html(wp_json_encode($effective, JSON_PRETTY_PRINT)) . '</pre>';
 
     echo '</div>';
   }
