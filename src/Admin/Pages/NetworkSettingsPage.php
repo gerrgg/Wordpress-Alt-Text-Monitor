@@ -26,17 +26,25 @@ final class NetworkSettingsPage {
 
       $generic_words = isset($_POST['rules_generic_words']) ? sanitize_text_field((string) $_POST['rules_generic_words']) : '';
 
-      $scan_days_back = isset($_POST['scan_days_back']) ? max(0, (int) $_POST['scan_days_back']) : 0;
-
-
       $scan_post_types = isset($_POST['scan_post_types']) && is_array($_POST['scan_post_types'])
         ? array_values(array_map('sanitize_key', $_POST['scan_post_types']))
         : ['post', 'page'];
 
+      $scope = isset($_POST['scan_scope']) ? sanitize_key((string) $_POST['scan_scope']) : 'all';
+      if (!in_array($scope, ['all','days_back','last_posts'], true)) {
+        $scope = 'all';
+      }
+
+      $scan_days_back = isset($_POST['scan_days_back']) ? max(0, (int) $_POST['scan_days_back']) : 0;
+      $scan_last_posts = isset($_POST['scan_last_posts']) ? max(0, (int) $_POST['scan_last_posts']) : 0;
+
+
       $data = [
         'scan' => [
           'post_types' => $scan_post_types,
+          'scope' => $scope,
           'days_back' => $scan_days_back,
+          'last_posts' => $scan_last_posts,
         ],
         'rules' => [
           'missing_alt_error' => $rules_missing_alt_error,
@@ -59,7 +67,9 @@ final class NetworkSettingsPage {
     $min_alt_length = (int) (($network['rules']['min_alt_length'] ?? 5));
     $detect_filename_val = (bool) (($network['rules']['detect_filename'] ?? true));
     $generic_words_val = (string) (($network['rules']['generic_words'] ?? ''));
-    $days_back = (int) (($network['scan']['days_back'] ?? 0));
+    $scope_val = (string) ($network['scan']['scope'] ?? 'all');
+    $days_back = (int) ($network['scan']['days_back'] ?? 0);
+    $last_posts = (int) ($network['scan']['last_posts'] ?? 0);
 
     echo '<div class="wrap">';
     echo '<h1>Alt Text Monitor Network Settings</h1>';
@@ -84,10 +94,28 @@ final class NetworkSettingsPage {
     echo '</tr>';
 
     echo '<tr>';
-    echo '<th scope="row">Content lookback (days)</th>';
+    echo '<th scope="row">Content scan scope</th>';
     echo '<td>';
-    echo '<input type="number" name="scan_days_back" min="0" step="1" value="' . esc_attr((string) $days_back) . '" />';
-    echo '<p class="description">0 = all time. Common values: 7, 14, 30, 60, 90.</p>';
+
+    echo '<label style="display:block;margin:3px 0;">';
+    echo '<input type="radio" name="scan_scope" value="all" ' . checked('all', $scope_val, false) . ' /> ';
+    echo 'All posts';
+    echo '</label>';
+
+    echo '<label style="display:block;margin:3px 0;">';
+    echo '<input type="radio" name="scan_scope" value="days_back" ' . checked('days_back', $scope_val, false) . ' /> ';
+    echo 'Posts modified in the last ';
+    echo '<input type="number" name="scan_days_back" min="0" step="1" value="' . esc_attr((string) $days_back) . '" style="width:90px;" /> days';
+    echo '</label>';
+
+    echo '<label style="display:block;margin:3px 0;">';
+    echo '<input type="radio" name="scan_scope" value="last_posts" ' . checked('last_posts', $scope_val, false) . ' /> ';
+    echo 'Last ';
+    echo '<input type="number" name="scan_last_posts" min="0" step="1" value="' . esc_attr((string) $last_posts) . '" style="width:120px;" /> posts (by last modified date)';
+    echo '</label>';
+
+    echo '<p class="description">Tip: "Last X posts" is best for large sites and keeps scans fast.</p>';
+
     echo '</td>';
     echo '</tr>';
 

@@ -8,7 +8,9 @@ final class Defaults {
     return [
       'scan' => [
         'post_types' => ['post', 'page'],
+        'scope' => 'all',
         'days_back' => 0,
+        'last_posts' => 0,
       ],
       'rules' => [
         'missing_alt_error' => true,
@@ -22,7 +24,9 @@ final class Defaults {
       'use_network_defaults' => true,
       'scan' => [
         'post_types' => ['post', 'page'],
+        'scope' => 'all',
         'days_back' => 0,
+        'last_posts' => 0,
       ],
       'rules' => [
         'missing_alt_error' => true,

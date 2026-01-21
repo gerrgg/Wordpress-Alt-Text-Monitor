@@ -15,11 +15,13 @@ final class ContentScanner {
    */
     public function scan_batch(int $offset, int $limit, array $settings): array {
       $post_types = $settings['scan']['post_types'] ?? ['post', 'page'];
-      $days_back = (int) ($settings['scan']['days_back'] ?? 0);
-
       if (!is_array($post_types) || empty($post_types)) {
         $post_types = ['post', 'page'];
       }
+
+      $scope = (string) ($settings['scan']['scope'] ?? 'all');
+      $days_back = (int) ($settings['scan']['days_back'] ?? 0);
+      $last_posts = (int) ($settings['scan']['last_posts'] ?? 0);
 
       $args = [
         'post_type' => $post_types,
@@ -27,15 +29,15 @@ final class ContentScanner {
         'fields' => 'ids',
         'posts_per_page' => $limit,
         'offset' => $offset,
-
-        // recent-first
-        'orderby' => 'modified',
-        'order' => 'DESC',
-
         'no_found_rows' => false,
       ];
 
-      if ($days_back > 0) {
+      // default ordering
+      $args['orderby'] = 'modified';
+      $args['order'] = 'DESC';
+
+      // apply scope
+      if ($scope === 'days_back' && $days_back > 0) {
         $args['date_query'] = [[
           'column' => 'post_modified_gmt',
           'after' => gmdate('Y-m-d H:i:s', time() - ($days_back * DAY_IN_SECONDS)),
@@ -43,16 +45,40 @@ final class ContentScanner {
         ]];
       }
 
+      // for last_posts scope, we DON'T apply date_query.
+      // we just cap the total and stop early.
       $q = new \WP_Query($args);
 
       $ids = array_map('intval', $q->posts);
-      $total = (int) $q->found_posts;
+      $found_total = (int) $q->found_posts;
 
-      $rules = $settings['rules'] ?? [];
+      // total cap handling
+      $total = $found_total;
+      if ($scope === 'last_posts' && $last_posts > 0) {
+        $total = min($found_total, $last_posts);
+      }
 
+      // If offset is beyond total cap, force done.
+      if ($offset >= $total) {
+        return [
+          'rows' => [],
+          'done' => true,
+          'next_offset' => $total,
+          'total' => $total,
+        ];
+      }
+
+      // If this batch extends beyond total cap, trim ids so we don't scan extra.
+      $remaining = $total - $offset;
+      if (count($ids) > $remaining) {
+        $ids = array_slice($ids, 0, $remaining);
+      }
+
+      // --- scan posts ---
       $rows = [];
       foreach ($ids as $post_id) {
-        $rows = array_merge($rows, $this->scan_post_acf($post_id, $rules));
+        if ($post_id <= 0) continue;
+        $rows = array_merge($rows, $this->scan_post_acf($post_id, $settings)); // whatever your method is
       }
 
       $next_offset = $offset + count($ids);
@@ -66,39 +92,40 @@ final class ContentScanner {
       ];
     }
 
+
     private function scan_post_acf(int $post_id, array $rules): array {
-    if (!function_exists('get_field_objects')) {
-      return [];
+      if (!function_exists('get_field_objects')) {
+        return [];
+      }
+
+      $field_objects = \get_field_objects($post_id);
+      if (!is_array($field_objects) || empty($field_objects)) {
+        return [];
+      }
+
+      $ctx = [
+        'post_id' => $post_id,
+        'post_title' => (string) \get_the_title($post_id),
+        'post_type' => (string) \get_post_type($post_id),
+        'post_edit_link' => (string) \get_edit_post_link($post_id, 'raw'),
+      ];
+
+      $rows = [];
+      foreach ($field_objects as $name => $field) {
+        if (!is_array($field)) continue;
+
+        $field_name = (string) ($field['name'] ?? $name);
+        $field_type = (string) ($field['type'] ?? '');
+        $value = $field['value'] ?? null;
+
+        $rows = array_merge(
+          $rows,
+          $this->walk_field($field, $value, $rules, $ctx, $field_name)
+        );
+      }
+
+      return $rows;
     }
-
-    $field_objects = \get_field_objects($post_id);
-    if (!is_array($field_objects) || empty($field_objects)) {
-      return [];
-    }
-
-    $ctx = [
-      'post_id' => $post_id,
-      'post_title' => (string) \get_the_title($post_id),
-      'post_type' => (string) \get_post_type($post_id),
-      'post_edit_link' => (string) \get_edit_post_link($post_id, 'raw'),
-    ];
-
-    $rows = [];
-    foreach ($field_objects as $name => $field) {
-      if (!is_array($field)) continue;
-
-      $field_name = (string) ($field['name'] ?? $name);
-      $field_type = (string) ($field['type'] ?? '');
-      $value = $field['value'] ?? null;
-
-      $rows = array_merge(
-        $rows,
-        $this->walk_field($field, $value, $rules, $ctx, $field_name)
-      );
-    }
-
-    return $rows;
-  }
 
   /**
    * @param array $field ACF field object
