@@ -7,6 +7,19 @@ use Floodlight\AltTextMonitor\Jobs\Jobs;
 use Floodlight\AltTextMonitor\Findings\Findings;
 
 final class ResultsPage {
+
+private function why_label(string $why): string {
+  $map = [
+    'missing_alt' => 'Missing alt text',
+    'alt_too_short' => 'Alt text too short',
+    'alt_looks_like_filename' => 'Alt looks like a filename',
+    'alt_generic' => 'Alt is too generic',
+  ];
+
+  return $map[$why] ?? $why;
+}
+
+
   public function render(): void {
     if (!\current_user_can('manage_options')) {
       \wp_die('You do not have permission to access this page.');
@@ -60,6 +73,9 @@ final class ResultsPage {
 
     echo '<table class="widefat striped">';
     echo '<thead><tr>';
+    echo '<th>Source</th>';
+    echo '<th>Post</th>';
+    echo '<th>Field</th>';
     echo '<th>Severity</th>';
     echo '<th>Attachment</th>';
     echo '<th>Alt Text</th>';
@@ -79,12 +95,31 @@ final class ResultsPage {
       $alt_len = (int) ($row['alt_length'] ?? 0);
       $file_name = (string) ($row['file_name'] ?? '');
       $edit_link = (string) ($row['edit_link'] ?? '');
+      $source = (string) ($row['source'] ?? '');
+      $post_id = (int) ($row['post_id'] ?? 0);
+      $post_title = (string) ($row['post_title'] ?? '');
+      $post_link = (string) ($row['post_edit_link'] ?? '');
+      $field_path = (string) ($row['field_path'] ?? '');
       if (!is_array($issues)) $issues = [];
 
-      $edit_link = $id ? \get_edit_post_link($id, 'raw') : '';
       $file_link = $id ? \wp_get_attachment_url($id) : '';
 
       echo '<tr>';
+
+      echo '<td>' . esc_html($source) . '</td>';
+
+      echo '<td>';
+      if ($post_id && $post_link) {
+        echo '<a href="' . esc_url($post_link) . '">' . esc_html($post_title ?: ('Post #' . $post_id)) . '</a>';
+      } else {
+        echo '—';
+      }
+      echo '</td>';
+
+      echo '<td>';
+      echo $field_path !== '' ? '<code>' . esc_html($field_path) . '</code>' : '—';
+      echo '</td>';
+
       echo '<td><strong>' . \esc_html($sev) . '</strong></td>';
 
       echo '<td>';
@@ -107,7 +142,8 @@ final class ResultsPage {
         }
       echo '</td>';
 
-      echo '<td>' . \esc_html($why) . '</td>';
+      echo '<td>' . \esc_html($this->why_label($why)) . '</td>';
+
       echo '<td>' . \esc_html(implode(', ', $issues)) . '</td>';
       echo '</tr>';
     }

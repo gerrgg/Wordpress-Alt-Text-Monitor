@@ -31,6 +31,9 @@ require_once FATM_PATH . 'src/Jobs/Jobs.php';
 require_once FATM_PATH . 'src/Scan/MediaScanner.php';
 require_once FATM_PATH . 'src/Admin/Actions.php';
 require_once FATM_PATH . 'src/Admin/Pages/ResultsPage.php';
+require_once FATM_PATH . 'src/Scan/AltEvaluator.php';
+require_once FATM_PATH . 'src/Scan/ContentScanner.php';
+
 
 
 /**

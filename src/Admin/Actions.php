@@ -8,6 +8,9 @@ use Floodlight\AltTextMonitor\Jobs\Jobs;
 use Floodlight\AltTextMonitor\Settings\Settings;
 use Floodlight\AltTextMonitor\Findings\Findings;
 use Floodlight\AltTextMonitor\Scan\MediaScanner;
+use Floodlight\AltTextMonitor\Scan\ContentScanner;
+use Floodlight\AltTextMonitor\Scan\AltEvaluator;
+
 
 
 final class Actions {
@@ -64,51 +67,65 @@ final class Actions {
     }
 
     $effective = Settings::get_effective();
-    $rules = $effective['rules'] ?? [];
+    $batch_size = 10;
 
-    $batch_size = 25;
-
-    // initialize findings on first step
     if (($job['progress']['current'] ?? 0) === 0 && empty($job['findings_initialized'])) {
       Findings::init((string) $job['id']);
       Jobs::update(['findings_initialized' => true]);
     }
 
-    if (($job['type'] ?? '') !== 'media') {
-      // Content scan not implemented yet; leave placeholder
-      $job = Jobs::update([
-        'status' => 'error',
-        'message' => 'Content scan not implemented yet.',
-        'error' => 'Implement in Step 4.',
-      ]);
+    $type = (string) ($job['type'] ?? '');
+    $offset = (int) ($job['cursor']['offset'] ?? 0);
+
+    $evaluator = new AltEvaluator();
+
+    if ($type === 'media') {
+      $scanner = new MediaScanner($evaluator);
+      $res = $scanner->scan_batch($offset, 25, $effective['rules'] ?? []);
+      Findings::add_many((string) $job['id'], $res['rows']);
+
+      $job_patch = [
+        'cursor' => ['offset' => $res['next_offset']],
+        'progress' => ['current' => $res['next_offset'], 'total' => $res['total']],
+        'message' => 'Scanning Media Library…',
+      ];
+
+      if ($res['done']) {
+        $job_patch['status'] = 'completed';
+        $job_patch['message'] = 'Media scan completed.';
+      }
+
+      $job = Jobs::update($job_patch);
       \wp_send_json_success(['job' => $job]);
     }
 
-    $offset = (int) ($job['cursor']['offset'] ?? 0);
+    if ($type === 'content') {
+      $scanner = new ContentScanner($evaluator);
+      $res = $scanner->scan_batch($offset, $batch_size, $effective);
+      Findings::add_many((string) $job['id'], $res['rows']);
 
-    $scanner = new MediaScanner();
-    $res = $scanner->scan_batch($offset, $batch_size, $rules);
+      $job_patch = [
+        'cursor' => ['offset' => $res['next_offset']],
+        // progress total here is number of posts, not findings rows
+        'progress' => ['current' => $res['next_offset'], 'total' => $res['total']],
+        'message' => 'Scanning content (ACF image/gallery)…',
+      ];
 
-    // Store findings
-    Findings::add_many((string) $job['id'], $res['rows']);
+      if ($res['done']) {
+        $job_patch['status'] = 'completed';
+        $job_patch['message'] = 'Content scan completed (ACF image/gallery).';
+      }
 
-    $job_patch = [
-      'cursor' => [
-        'offset' => $res['next_offset'],
-      ],
-      'progress' => [
-        'current' => $res['next_offset'],
-        'total' => $res['total'],
-      ],
-      'message' => 'Scanning Media Library…',
-    ];
-
-    if ($res['done']) {
-      $job_patch['status'] = 'completed';
-      $job_patch['message'] = 'Media scan completed.';
+      $job = Jobs::update($job_patch);
+      \wp_send_json_success(['job' => $job]);
     }
 
-    $job = Jobs::update($job_patch);
+    $job = Jobs::update([
+      'status' => 'error',
+      'message' => 'Unknown job type.',
+      'error' => 'Invalid type: ' . $type,
+    ]);
+
 
     \wp_send_json_success(['job' => $job]);
   }

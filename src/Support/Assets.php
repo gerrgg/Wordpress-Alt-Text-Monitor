@@ -14,7 +14,7 @@ final class Assets {
       'fatm-admin',
       FATM_URL . 'assets/admin.js',
       [],
-      FATM_VERSION,
+      time(),
       true
     );
   }
