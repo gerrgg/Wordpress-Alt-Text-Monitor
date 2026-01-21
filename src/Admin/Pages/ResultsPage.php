@@ -148,7 +148,7 @@ private function why_label(string $why): string {
           echo '<code>' . \esc_html((string) ($row['alt'] ?? '')) . '</code>';
           echo '<div class="description">Trimmed: <code>' . \esc_html($alt_trimmed) . '</code> — Length: ' . (int)$alt_len . '</div>';
 
-          // ✅ show attachment alt vs inline alt (when available)
+          // show attachment alt vs inline alt
           if ($attachment_alt !== '' && $source === 'acf_wysiwyg') {
             echo '<div class="description">Attachment alt: <code>' . esc_html($attachment_alt) . '</code></div>';
           }
