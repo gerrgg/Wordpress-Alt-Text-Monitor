@@ -100,6 +100,9 @@ private function why_label(string $why): string {
       $post_title = (string) ($row['post_title'] ?? '');
       $post_link = (string) ($row['post_edit_link'] ?? '');
       $field_path = (string) ($row['field_path'] ?? '');
+
+      $img_src = (string) ($row['img_src'] ?? '');
+      $attachment_alt = (string) ($row['attachment_alt'] ?? '');
       if (!is_array($issues)) $issues = [];
 
       $file_link = $id ? \wp_get_attachment_url($id) : '';
@@ -123,24 +126,35 @@ private function why_label(string $why): string {
       echo '<td><strong>' . \esc_html($sev) . '</strong></td>';
 
       echo '<td>';
-      if ($edit_link) {
+
+      if ($id > 0 && $edit_link) {
         echo '<a href="' . \esc_url($edit_link) . '">' . \esc_html($title ?: ('Attachment #' . $id)) . '</a>';
+        if ($file_name) {
+          echo '<div class="description">' . \esc_html($file_name) . '</div>';
+        }
+      } elseif ($img_src !== '') {
+        echo 'Embedded image';
+        echo '<div class="description"><a href="' . esc_url($img_src) . '" target="_blank" rel="noopener">View src</a></div>';
       } else {
-        echo \esc_html($title ?: ('Attachment #' . $id));
+        echo '—';
       }
-      if ($file_name) {
-        echo '<div class="description">' . \esc_html($file_name) . '</div>';
-      }
+
       echo '</td>';
 
       echo '<td>';
-        if(in_array('missing_alt', $issues, true)) {
+        if (in_array('missing_alt', $issues, true)) {
           echo '<em>(no alt text)</em><br />';
         } else {
           echo '<code>' . \esc_html((string) ($row['alt'] ?? '')) . '</code>';
           echo '<div class="description">Trimmed: <code>' . \esc_html($alt_trimmed) . '</code> — Length: ' . (int)$alt_len . '</div>';
+
+          // ✅ show attachment alt vs inline alt (when available)
+          if ($attachment_alt !== '' && $source === 'acf_wysiwyg') {
+            echo '<div class="description">Attachment alt: <code>' . esc_html($attachment_alt) . '</code></div>';
+          }
         }
       echo '</td>';
+
 
       echo '<td>' . \esc_html($this->why_label($why)) . '</td>';
 

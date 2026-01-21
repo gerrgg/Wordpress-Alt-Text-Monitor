@@ -67,6 +67,53 @@ final class AltEvaluator {
     ];
   }
 
+  public function evaluate_inline_alt(string $alt_raw, array $rules): array {
+  $alt_trimmed = trim($alt_raw);
+
+  $missing_is_error = (bool) ($rules['missing_alt_error'] ?? true);
+  $min_len = (int) ($rules['min_alt_length'] ?? 5);
+  $detect_filename = (bool) ($rules['detect_filename'] ?? true);
+  $generic_words = $this->parse_csv_words((string) ($rules['generic_words'] ?? ''));
+
+  $severity = 'ok';
+  $issues = [];
+  $matched_rule = '';
+
+  if ($alt_trimmed === '') {
+    $severity = $missing_is_error ? 'error' : 'warning';
+    $issues[] = 'missing_alt';
+    $matched_rule = 'missing_alt';
+  } else {
+    if (\mb_strlen($alt_trimmed) < $min_len) {
+      $severity = $this->max_severity($severity, 'warning');
+      $issues[] = 'alt_too_short';
+      $matched_rule = $matched_rule ?: 'alt_too_short';
+    }
+
+    if ($detect_filename && $this->looks_like_filename($alt_trimmed)) {
+      $severity = $this->max_severity($severity, 'warning');
+      $issues[] = 'alt_looks_like_filename';
+      $matched_rule = $matched_rule ?: 'alt_looks_like_filename';
+    }
+
+    if (!empty($generic_words) && $this->is_generic_alt($alt_trimmed, $generic_words)) {
+      $severity = $this->max_severity($severity, 'warning');
+      $issues[] = 'alt_generic';
+      $matched_rule = $matched_rule ?: 'alt_generic';
+    }
+  }
+
+  return [
+    'severity' => $severity,
+    'alt' => $alt_raw,
+    'alt_trimmed' => $alt_trimmed,
+    'alt_length' => \mb_strlen($alt_trimmed),
+    'matched_rule' => $matched_rule,
+    'issues' => $issues,
+  ];
+}
+
+
   private function max_severity(string $a, string $b): string {
     $rank = ['ok' => 0, 'warning' => 1, 'error' => 2];
     return ($rank[$b] > $rank[$a]) ? $b : $a;

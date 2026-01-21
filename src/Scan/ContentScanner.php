@@ -189,9 +189,102 @@ final class ContentScanner {
       return $rows;
     }
 
-    // Not handling WYSIWYG in this step.
+    if ($type === 'wysiwyg') {
+      if (is_string($value) && $value !== '') {
+        $rows = array_merge($rows, $this->scan_wysiwyg_html($value, $rules, $ctx, $path));
+      }
+      return $rows;
+    }
+
+
     return $rows;
   }
+
+  private function scan_wysiwyg_html(string $html, array $rules, array $ctx, string $field_path): array {
+    $rows = [];
+
+    // Quick skip if no <img
+    if (stripos($html, '<img') === false) {
+      return $rows;
+    }
+
+    $prev = libxml_use_internal_errors(true);
+    $doc = new \DOMDocument();
+
+    // Wrap to ensure valid DOM
+    $wrapped = '<!doctype html><html><body>' . $html . '</body></html>';
+    $doc->loadHTML($wrapped, LIBXML_NOWARNING | LIBXML_NOERROR);
+
+    $imgs = $doc->getElementsByTagName('img');
+    $idx = 0;
+
+    foreach ($imgs as $img) {
+      $idx++;
+
+      $alt = $img->getAttribute('alt'); // empty string if missing
+      $src = $img->getAttribute('src');
+      $class = $img->getAttribute('class');
+      $data_id = $img->getAttribute('data-id');
+
+      $attachment_id = $this->resolve_attachment_id($class, $data_id, $src);
+
+      // Evaluate inline alt (this is what matters on the page)
+      $inline_eval = $this->evaluator->evaluate_inline_alt((string) $alt, $rules);
+
+      // If there are no issues and you don’t want OK rows, keep it as-is.
+      // (Your Results page filters "issues" by default anyway.)
+      $row = array_merge($inline_eval, [
+        'source' => 'acf_wysiwyg',
+        'field_path' => $field_path . '.img[' . $idx . ']',
+        'img_src' => (string) $src,
+        'img_class' => (string) $class,
+        'attachment_id' => (int) $attachment_id,
+      ], $ctx);
+
+      // If we can resolve an attachment, enrich attachment info for linking in Results
+      if ($attachment_id > 0 && $this->is_image_attachment($attachment_id)) {
+        $att = $this->evaluator->evaluate_attachment($attachment_id, $rules);
+
+        // Keep inline alt as the primary alt fields, but store attachment context too
+        $row['title'] = $att['title'] ?? '';
+        $row['url'] = $att['url'] ?? '';
+        $row['edit_link'] = $att['edit_link'] ?? '';
+        $row['file_name'] = $att['file_name'] ?? '';
+        $row['mime'] = $att['mime'] ?? '';
+        $row['attachment_alt'] = $att['alt'] ?? '';
+      }
+
+      $rows[] = $row;
+    }
+
+    libxml_clear_errors();
+    libxml_use_internal_errors($prev);
+
+    return $rows;
+  }
+
+  private function resolve_attachment_id(string $class, string $data_id, string $src): int {
+    // 1) wp-image-123
+    if ($class !== '' && preg_match('/\bwp-image-(\d+)\b/', $class, $m)) {
+      return (int) $m[1];
+    }
+
+    // 2) data-id="123"
+    if ($data_id !== '' && ctype_digit($data_id)) {
+      return (int) $data_id;
+    }
+
+    // 3) URL -> attachment id
+    if ($src !== '') {
+      // strip querystring
+      $clean = preg_replace('/\?.*$/', '', $src);
+      $id = (int) \attachment_url_to_postid((string) $clean);
+      if ($id > 0) return $id;
+    }
+
+    return 0;
+  }
+
 
   /**
    * Convert ACF image/gallery return formats to attachment ID.
