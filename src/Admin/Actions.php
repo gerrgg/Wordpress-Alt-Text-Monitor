@@ -68,6 +68,7 @@ final class Actions {
 
     $effective = Settings::get_effective();
     $batch_size = 10;
+    $batch_size_media = 25;
 
     if (($job['progress']['current'] ?? 0) === 0 && empty($job['findings_initialized'])) {
       Findings::init((string) $job['id']);
@@ -81,7 +82,7 @@ final class Actions {
 
     if ($type === 'media') {
       $scanner = new MediaScanner($evaluator);
-      $res = $scanner->scan_batch($offset, 25, $effective['rules'] ?? []);
+      $res = $scanner->scan_batch($offset, $batch_size_media, $effective, $effective['rules'] ?? []);
       Findings::add_many((string) $job['id'], $res['rows']);
 
       $job_patch = [
@@ -106,7 +107,6 @@ final class Actions {
 
       $job_patch = [
         'cursor' => ['offset' => $res['next_offset']],
-        // progress total here is number of posts, not findings rows
         'progress' => ['current' => $res['next_offset'], 'total' => $res['total']],
         'message' => 'Scanning content (ACF image/gallery)…',
       ];
@@ -125,7 +125,6 @@ final class Actions {
       'message' => 'Unknown job type.',
       'error' => 'Invalid type: ' . $type,
     ]);
-
 
     \wp_send_json_success(['job' => $job]);
   }

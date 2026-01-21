@@ -15,20 +15,35 @@ final class ContentScanner {
    */
     public function scan_batch(int $offset, int $limit, array $settings): array {
       $post_types = $settings['scan']['post_types'] ?? ['post', 'page'];
+      $days_back = (int) ($settings['scan']['days_back'] ?? 0);
+
       if (!is_array($post_types) || empty($post_types)) {
         $post_types = ['post', 'page'];
       }
 
-      $q = new \WP_Query([
+      $args = [
         'post_type' => $post_types,
         'post_status' => ['publish'],
         'fields' => 'ids',
         'posts_per_page' => $limit,
         'offset' => $offset,
-        'orderby' => 'ID',
-        'order' => 'ASC',
+
+        // recent-first
+        'orderby' => 'modified',
+        'order' => 'DESC',
+
         'no_found_rows' => false,
-      ]);
+      ];
+
+      if ($days_back > 0) {
+        $args['date_query'] = [[
+          'column' => 'post_modified_gmt',
+          'after' => gmdate('Y-m-d H:i:s', time() - ($days_back * DAY_IN_SECONDS)),
+          'inclusive' => true,
+        ]];
+      }
+
+      $q = new \WP_Query($args);
 
       $ids = array_map('intval', $q->posts);
       $total = (int) $q->found_posts;

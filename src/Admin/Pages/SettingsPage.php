@@ -25,6 +25,7 @@ final class SettingsPage {
       $rules_min_alt_length = isset($_POST['rules_min_alt_length']) ? max(0, (int) $_POST['rules_min_alt_length']) : 5;
       $detect_filename = !empty($_POST['rules_detect_filename']);
       $generic_words = isset($_POST['rules_generic_words']) ? sanitize_text_field((string) $_POST['rules_generic_words']) : '';
+      $scan_days_back = isset($_POST['scan_days_back']) ? max(0, (int) $_POST['scan_days_back']) : 0;
 
       $scan_post_types = isset($_POST['scan_post_types']) && is_array($_POST['scan_post_types'])
         ? array_values(array_map('sanitize_key', $_POST['scan_post_types']))
@@ -34,6 +35,7 @@ final class SettingsPage {
         'use_network_defaults' => $use_network_defaults,
         'scan' => [
           'post_types' => $scan_post_types,
+          'days_back' => $scan_days_back,
         ],
         'rules' => [
           'missing_alt_error' => $rules_missing_alt_error,
@@ -58,6 +60,7 @@ final class SettingsPage {
     $min_alt_length = (int) (($site['rules']['min_alt_length'] ?? 5));
     $detect_filename_val = (bool) (($site['rules']['detect_filename'] ?? true));
     $generic_words_val = (string) (($site['rules']['generic_words'] ?? ''));
+    $days_back = (int) (($site['scan']['days_back'] ?? 0));
 
     echo '<div class="wrap">';
     echo '<h1>Alt Text Monitor Settings</h1>';
@@ -90,7 +93,15 @@ final class SettingsPage {
       echo ' ' . esc_html($pt->labels->singular_name) . ' (' . esc_html($key) . ')';
       echo '</label>';
     }
-    echo '<p class="description">Used later for Content Scan scope.</p>';
+    echo '<p class="description">Used to limit which posts are included in Content Scans.</p>';
+    echo '</td>';
+    echo '</tr>';
+
+    echo '<tr>';
+    echo '<th scope="row">Content lookback (days)</th>';
+    echo '<td>';
+    echo '<input type="number" name="scan_days_back" min="0" step="1" value="' . esc_attr((string) $days_back) . '" />';
+    echo '<p class="description">0 = all time. Common values: 7, 14, 30, 60, 90.</p>';
     echo '</td>';
     echo '</tr>';
 

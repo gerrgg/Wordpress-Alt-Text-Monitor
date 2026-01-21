@@ -26,6 +26,8 @@ final class NetworkSettingsPage {
 
       $generic_words = isset($_POST['rules_generic_words']) ? sanitize_text_field((string) $_POST['rules_generic_words']) : '';
 
+      $scan_days_back = isset($_POST['scan_days_back']) ? max(0, (int) $_POST['scan_days_back']) : 0;
+
 
       $scan_post_types = isset($_POST['scan_post_types']) && is_array($_POST['scan_post_types'])
         ? array_values(array_map('sanitize_key', $_POST['scan_post_types']))
@@ -34,6 +36,7 @@ final class NetworkSettingsPage {
       $data = [
         'scan' => [
           'post_types' => $scan_post_types,
+          'days_back' => $scan_days_back,
         ],
         'rules' => [
           'missing_alt_error' => $rules_missing_alt_error,
@@ -56,6 +59,7 @@ final class NetworkSettingsPage {
     $min_alt_length = (int) (($network['rules']['min_alt_length'] ?? 5));
     $detect_filename_val = (bool) (($network['rules']['detect_filename'] ?? true));
     $generic_words_val = (string) (($network['rules']['generic_words'] ?? ''));
+    $days_back = (int) (($network['scan']['days_back'] ?? 0));
 
     echo '<div class="wrap">';
     echo '<h1>Alt Text Monitor Network Settings</h1>';
@@ -76,6 +80,14 @@ final class NetworkSettingsPage {
       echo ' ' . esc_html($pt->labels->singular_name) . ' (' . esc_html($key) . ')';
       echo '</label>';
     }
+    echo '</td>';
+    echo '</tr>';
+
+    echo '<tr>';
+    echo '<th scope="row">Content lookback (days)</th>';
+    echo '<td>';
+    echo '<input type="number" name="scan_days_back" min="0" step="1" value="' . esc_attr((string) $days_back) . '" />';
+    echo '<p class="description">0 = all time. Common values: 7, 14, 30, 60, 90.</p>';
     echo '</td>';
     echo '</tr>';
 

@@ -73,7 +73,6 @@ final class DashboardPage {
 
     echo '</div>';
 
-    echo '<p class="description">Step 2 uses placeholder progress (no real scanning yet). Next step will plug in Media scan logic.</p>';
     echo '</div>';
   }
 }
