@@ -12,6 +12,7 @@ private function build_url(array $overrides = []): string {
   $base = \admin_url('admin.php?page=fatm-results');
 
   $q = [
+    'job'      => isset($_GET['job']) ? \sanitize_text_field((string) $_GET['job']) : '',
     'severity' => isset($_GET['severity']) ? \sanitize_key((string) $_GET['severity']) : 'issues',
     'source'   => isset($_GET['source']) ? \sanitize_key((string) $_GET['source']) : '',
     'issue'    => isset($_GET['issue']) ? \sanitize_key((string) $_GET['issue']) : '',
@@ -19,14 +20,16 @@ private function build_url(array $overrides = []): string {
     'paged'    => isset($_GET['paged']) ? max(1, (int) $_GET['paged']) : 1,
   ];
 
+
   foreach ($overrides as $k => $v) {
     $q[$k] = $v;
   }
 
   // Remove empties
-  foreach (['source','issue','s'] as $k) {
+  foreach (['job','source','issue','s'] as $k) {
     if ($q[$k] === '') unset($q[$k]);
   }
+
 
   // if you change any filter besides paged, reset paged
   if (isset($overrides['severity']) || isset($overrides['source']) || isset($overrides['issue']) || isset($overrides['s'])) {
@@ -54,7 +57,18 @@ private function why_label(string $why): string {
       \wp_die('You do not have permission to access this page.');
     }
 
-    $job = Jobs::get();
+    $job_id = isset($_GET['job']) ? \sanitize_text_field((string) $_GET['job']) : '';
+
+    if ($job_id !== '') {
+      // "virtual" job for display purposes
+      $job = [
+        'id' => $job_id,
+        'type' => 'quick',
+        'status' => 'completed',
+      ];
+    } else {
+      $job = Jobs::get();
+    }
 
     echo '<div class="wrap">';
     echo '<h1>Alt Text Monitor Results</h1>';
@@ -177,6 +191,9 @@ private function why_label(string $why): string {
 
     echo '<form method="get" style="margin: 12px 0;">';
     echo '<input type="hidden" name="page" value="fatm-results" />';
+    if ($job_id !== '') {
+      echo '<input type="hidden" name="job" value="' . esc_attr($job_id) . '" />';
+    }
     echo '<input type="hidden" name="severity" value="' . esc_attr($sev) . '" />';
     if ($source_filter !== '') echo '<input type="hidden" name="source" value="' . esc_attr($source_filter) . '" />';
     if ($issue_filter !== '') echo '<input type="hidden" name="issue" value="' . esc_attr($issue_filter) . '" />';

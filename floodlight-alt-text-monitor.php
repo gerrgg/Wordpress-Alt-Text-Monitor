@@ -34,8 +34,7 @@ require_once FATM_PATH . 'src/Admin/Dashboard/DashboardWidget.php';
 require_once FATM_PATH . 'src/Scan/AltEvaluator.php';
 require_once FATM_PATH . 'src/Scan/MediaScanner.php';
 require_once FATM_PATH . 'src/Scan/ContentScanner.php';
-
-
+require_once FATM_PATH . 'src/Admin/Support/Debug.php';
 
 
 /**

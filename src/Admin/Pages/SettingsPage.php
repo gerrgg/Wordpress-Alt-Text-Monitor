@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Floodlight\AltTextMonitor\Admin\Pages;
 
 use Floodlight\AltTextMonitor\Settings\Settings;
+use Floodlight\AltTextMonitor\Admin\Support\Debug;
 
 final class SettingsPage {
   private const NONCE_ACTION = 'fatm_save_site_settings';
@@ -174,13 +175,11 @@ final class SettingsPage {
 
     echo '<hr />';
     echo '<h2>Debug preview</h2>';
-    echo '<h3>Site</h3>';
-    echo '<pre style="background: #fff;padding:12px;border:1px solid #ccd0d4;max-width:900px;overflow:auto;">' . esc_html(wp_json_encode($site, JSON_PRETTY_PRINT)) . '</pre>';
-    echo '<h3>Network</h3>';
-    echo '<pre style="background: #fff;padding:12px;border:1px solid #ccd0d4;max-width:900px;overflow:auto;">' . esc_html(wp_json_encode($network, JSON_PRETTY_PRINT)) . '</pre>';
-    echo '<h3>Effective</h3>';
-    echo '<pre style="background: #fff;padding:12px;border:1px solid #ccd0d4;max-width:900px;overflow:auto;">' . esc_html(wp_json_encode($effective, JSON_PRETTY_PRINT)) . '</pre>';
-
+    Debug::section('Show / Hide debug', function () use ($site, $network, $effective) {
+      Debug::json_details('Site', $site);
+      Debug::json_details('Network', $network);
+      Debug::json_details('Effective', $effective);
+    });
     echo '</div>';
   }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Floodlight\AltTextMonitor\Admin\Pages;
 
 use Floodlight\AltTextMonitor\Settings\Settings;
+use Floodlight\AltTextMonitor\Admin\Support\Debug;
 
 final class NetworkSettingsPage {
   private const NONCE_ACTION = 'fatm_save_network_settings';
@@ -157,8 +158,7 @@ final class NetworkSettingsPage {
 
     echo '<hr />';
     echo '<h2>Debug preview</h2>';
-    echo '<pre style="background: #fff;padding:12px;border:1px solid #ccd0d4;max-width:900px;overflow:auto;">' . esc_html(wp_json_encode($network, JSON_PRETTY_PRINT)) . '</pre>';
-
+    Debug::json_details('Network', $network);
 
     echo '</div>';
   }

@@ -20,6 +20,8 @@ final class Actions {
     add_action('admin_post_fatm_start_scan', [$this, 'start_scan']);
     add_action('admin_post_fatm_cancel_scan', [$this, 'cancel_scan']);
     add_action('wp_ajax_fatm_run_step', [$this, 'run_step']);
+
+    add_action('admin_post_fatm_run_quick_scan', [$this, 'run_quick_scan']);
   }
 
   public function start_scan(): void {
@@ -128,6 +130,43 @@ final class Actions {
 
     \wp_send_json_success(['job' => $job]);
   }
+
+  public function run_quick_scan(): void {
+    if (!current_user_can('manage_options')) {
+      wp_die('Forbidden');
+    }
+
+    check_admin_referer('fatm_quick_scan');
+
+    // Build settings: force content scope to last 5 posts
+    $settings = Settings::get_effective();
+    $settings['scan']['scope'] = 'last_posts';
+    $settings['scan']['last_posts'] = 5;
+
+    $job_id = wp_generate_uuid4();
+
+    Findings::init($job_id);
+
+    $evaluator = new AltEvaluator();
+    $scanner = new ContentScanner($evaluator);
+
+    $offset = 0;
+    $limit = 10; // small batch; last_posts=5 caps total anyway
+
+    do {
+      $res = $scanner->scan_batch($offset, $limit, $settings);
+      Findings::add_many($job_id, $res['rows'] ?? []);
+      $offset = (int) ($res['next_offset'] ?? ($offset + $limit));
+      $done = (bool) ($res['done'] ?? true);
+    } while (!$done);
+
+    update_option('fatm_last_quick_job_id', $job_id, false);
+    update_option('fatm_last_quick_ran_at', time(), false);
+
+    wp_safe_redirect(admin_url('index.php?fatm_quick_scan=1'));
+    exit;
+  }
+
 
   private function return_url(): string {
     // Return to dashboard

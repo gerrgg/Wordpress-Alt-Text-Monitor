@@ -8,6 +8,7 @@ use Floodlight\AltTextMonitor\Admin\Pages\SettingsPage;
 use Floodlight\AltTextMonitor\Admin\Pages\NetworkDashboardPage;
 use Floodlight\AltTextMonitor\Admin\Pages\NetworkSettingsPage;
 use Floodlight\AltTextMonitor\Admin\Pages\ResultsPage;
+use Floodlight\AltTextMonitor\Admin\Support\Debug;
 
 final class Admin {
   private DashboardPage $dashboard;
@@ -65,11 +66,12 @@ final class Admin {
       'Alt Text Monitor',
       'manage_network_options',
       'fatm-network',
-      [$this->network_dashboard, 'render'],
+      [$this->network_settings, 'render'],
       'dashicons-visibility',
       80
     );
 
+    // Optional: keep a submenu that points to the same page (WordPress will also add one automatically)
     add_submenu_page(
       'fatm-network',
       'Settings',
