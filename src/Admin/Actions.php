@@ -172,7 +172,6 @@ final class Actions {
   }
 
   private function return_url(): string {
-    // Return to dashboard
     return admin_url('admin.php?page=fatm');
   }
 

@@ -31,7 +31,6 @@ final class Settings {
 
   public static function set_network(array $data): void {
     if (!is_multisite()) {
-      // On non-multisite installs, silently ignore.
       return;
     }
     update_site_option(self::OPT_NETWORK, $data);
@@ -45,8 +44,6 @@ final class Settings {
       return $site;
     }
 
-    // When inheriting, use network settings as the effective rules/scope.
-    // Preserve the flag so UI/debug reflects inheritance.
     $network = self::get_network();
     $network['use_network_defaults'] = true;
 

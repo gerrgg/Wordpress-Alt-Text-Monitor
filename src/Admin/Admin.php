@@ -71,7 +71,6 @@ final class Admin {
       80
     );
 
-    // Optional: keep a submenu that points to the same page (WordPress will also add one automatically)
     add_submenu_page(
       'fatm-network',
       'Settings',

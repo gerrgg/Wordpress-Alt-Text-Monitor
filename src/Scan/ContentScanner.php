@@ -32,11 +32,9 @@ final class ContentScanner {
         'no_found_rows' => false,
       ];
 
-      // default ordering
       $args['orderby'] = 'modified';
       $args['order'] = 'DESC';
 
-      // apply scope
       if ($scope === 'days_back' && $days_back > 0) {
         $args['date_query'] = [[
           'column' => 'post_modified_gmt',
@@ -45,20 +43,16 @@ final class ContentScanner {
         ]];
       }
 
-      // for last_posts scope, we DON'T apply date_query.
-      // we just cap the total and stop early.
       $q = new \WP_Query($args);
 
       $ids = array_map('intval', $q->posts);
       $found_total = (int) $q->found_posts;
 
-      // total cap handling
       $total = $found_total;
       if ($scope === 'last_posts' && $last_posts > 0) {
         $total = min($found_total, $last_posts);
       }
 
-      // If offset is beyond total cap, force done.
       if ($offset >= $total) {
         return [
           'rows' => [],
@@ -68,17 +62,15 @@ final class ContentScanner {
         ];
       }
 
-      // If this batch extends beyond total cap, trim ids so we don't scan extra.
       $remaining = $total - $offset;
       if (count($ids) > $remaining) {
         $ids = array_slice($ids, 0, $remaining);
       }
 
-      // --- scan posts ---
       $rows = [];
       foreach ($ids as $post_id) {
         if ($post_id <= 0) continue;
-        $rows = array_merge($rows, $this->scan_post_acf($post_id, $settings)); // whatever your method is
+        $rows = array_merge($rows, $this->scan_post_acf($post_id, $settings)); 
       }
 
       $next_offset = $offset + count($ids);
@@ -157,7 +149,6 @@ final class ContentScanner {
     }
 
     if ($type === 'group') {
-      // value is assoc array of subfield values
       $sub_fields = $field['sub_fields'] ?? [];
       if (is_array($sub_fields) && is_array($value)) {
         foreach ($sub_fields as $sub) {
@@ -173,7 +164,6 @@ final class ContentScanner {
     }
 
     if ($type === 'repeater') {
-      // value is array of rows; each row is assoc array keyed by subfield name
       $sub_fields = $field['sub_fields'] ?? [];
       if (is_array($sub_fields) && is_array($value)) {
         foreach ($value as $row_i => $row_val) {
@@ -196,11 +186,9 @@ final class ContentScanner {
     }
 
     if ($type === 'flexible_content') {
-      // value is array of layouts; each layout has 'acf_fc_layout' and its subfields by name
       $layouts = $field['layouts'] ?? [];
       if (!is_array($layouts) || !is_array($value)) return $rows;
 
-      // Build lookup: layout_name => sub_fields
       $layout_map = [];
       foreach ($layouts as $layout) {
         if (!is_array($layout)) continue;
@@ -245,7 +233,6 @@ final class ContentScanner {
   private function scan_wysiwyg_html(string $html, array $rules, array $ctx, string $field_path): array {
     $rows = [];
 
-    // Quick skip if no <img
     if (stripos($html, '<img') === false) {
       return $rows;
     }
@@ -253,7 +240,6 @@ final class ContentScanner {
     $prev = libxml_use_internal_errors(true);
     $doc = new \DOMDocument();
 
-    // Wrap to ensure valid DOM
     $wrapped = '<!doctype html><html><body>' . $html . '</body></html>';
     $doc->loadHTML($wrapped, LIBXML_NOWARNING | LIBXML_NOERROR);
 
@@ -270,11 +256,8 @@ final class ContentScanner {
 
       $attachment_id = $this->resolve_attachment_id($class, $data_id, $src);
 
-      // Evaluate inline alt (this is what matters on the page)
       $inline_eval = $this->evaluator->evaluate_inline_alt((string) $alt, $rules);
 
-      // If there are no issues and you don’t want OK rows, keep it as-is.
-      // (Your Results page filters "issues" by default anyway.)
       $row = array_merge($inline_eval, [
         'source' => 'acf_wysiwyg',
         'field_path' => $field_path . '.img[' . $idx . ']',
@@ -283,11 +266,9 @@ final class ContentScanner {
         'attachment_id' => (int) $attachment_id,
       ], $ctx);
 
-      // If we can resolve an attachment, enrich attachment info for linking in Results
       if ($attachment_id > 0 && $this->is_image_attachment($attachment_id)) {
         $att = $this->evaluator->evaluate_attachment($attachment_id, $rules);
 
-        // Keep inline alt as the primary alt fields, but store attachment context too
         $row['title'] = $att['title'] ?? '';
         $row['url'] = $att['url'] ?? '';
         $row['edit_link'] = $att['edit_link'] ?? '';
@@ -306,17 +287,14 @@ final class ContentScanner {
   }
 
   private function resolve_attachment_id(string $class, string $data_id, string $src): int {
-    // 1) wp-image-123
     if ($class !== '' && preg_match('/\bwp-image-(\d+)\b/', $class, $m)) {
       return (int) $m[1];
     }
 
-    // 2) data-id="123"
     if ($data_id !== '' && ctype_digit($data_id)) {
       return (int) $data_id;
     }
 
-    // 3) URL -> attachment id
     if ($src !== '') {
       // strip querystring
       $clean = preg_replace('/\?.*$/', '', $src);
@@ -342,7 +320,6 @@ final class ContentScanner {
       if (isset($value['id']) && (is_int($value['id']) || ctype_digit((string)$value['id']))) return (int) $value['id'];
     }
 
-    // URL return format for image fields
     if (is_string($value) && $value !== '' && preg_match('#^https?://#i', $value)) {
       $id = (int) \attachment_url_to_postid($value);
       return $id > 0 ? $id : 0;
@@ -360,9 +337,6 @@ final class ContentScanner {
   private function walk_value($value, array $rules, array $ctx, string $path): array {
     $rows = [];
 
-    // Image field patterns
-    // - int attachment ID
-    // - array with ID / id / url / sizes
     if (is_int($value) || (is_string($value) && ctype_digit($value))) {
       $attachment_id = (int) $value;
       if ($attachment_id > 0 && $this->is_image_attachment($attachment_id)) {
@@ -372,7 +346,6 @@ final class ContentScanner {
     }
 
     if (is_array($value)) {
-      // Gallery field patterns: array of IDs or arrays with ID
       if ($this->looks_like_gallery($value)) {
         foreach ($value as $item) {
           $attachment_id = $this->extract_attachment_id($item);
@@ -383,7 +356,6 @@ final class ContentScanner {
         return $rows;
       }
 
-      // Generic recursion for group/repeater/flexible (nested arrays)
       foreach ($value as $k => $v) {
         $k_str = is_int($k) ? '[' . $k . ']' : (string) $k;
         $child_path = $path === '' ? $k_str : $path . '.' . $k_str;
@@ -392,7 +364,6 @@ final class ContentScanner {
       return $rows;
     }
 
-    // not supported in v1: wysiwyg HTML parsing (next phase)
     return $rows;
   }
 
@@ -422,7 +393,6 @@ final class ContentScanner {
   }
 
   private function looks_like_gallery(array $value): bool {
-    // heuristic: sequential numeric keys and items are int/array
     $i = 0;
     foreach ($value as $k => $v) {
       if (!is_int($k) || $k !== $i) return false;

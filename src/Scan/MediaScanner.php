@@ -17,7 +17,6 @@ final class MediaScanner {
   }
 
   public function scan_batch(int $offset, int $limit, array $settings, array $rules): array {
-    // $days_back = (int) ($settings['scan']['days_back'] ?? 0);
 
     $args = [
       'post_type' => 'attachment',
@@ -30,16 +29,6 @@ final class MediaScanner {
       'order' => 'DESC',
       'no_found_rows' => false,
     ];
-
-    // we always do a full media scan for now
-
-    // if ($days_back > 0) {
-    //   $args['date_query'] = [[
-    //     'column' => 'post_date',
-    //     'after' => gmdate('Y-m-d H:i:s', time() - ($days_back * DAY_IN_SECONDS)),
-    //     'inclusive' => true,
-    //   ]];
-    // }
 
     $q = new \WP_Query($args);
 

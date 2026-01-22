@@ -72,7 +72,6 @@
         'View Results</a></p>';
     }
 
-    // Optional: keep a small debug toggle
     html +=
       '<details style="margin-top:12px;">' +
       '<summary style="cursor:pointer;">Debug</summary>' +
@@ -114,6 +113,6 @@
       });
   }
 
-  // First tick decides whether to poll.
+  // decide if we should poll
   tick();
 })();

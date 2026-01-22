@@ -60,7 +60,7 @@ private function why_label(string $why): string {
     $job_id = isset($_GET['job']) ? \sanitize_text_field((string) $_GET['job']) : '';
 
     if ($job_id !== '') {
-      // "virtual" job for display purposes
+      // "fake" job for display purposes
       $job = [
         'id' => $job_id,
         'type' => 'quick',
@@ -88,7 +88,7 @@ private function why_label(string $why): string {
 
     $items = $findings['items'];
 
-    // ---- Filters ----
+    // filters
     $sev = isset($_GET['severity']) ? \sanitize_key((string) $_GET['severity']) : 'issues';
     $source_filter = isset($_GET['source']) ? \sanitize_key((string) $_GET['source']) : '';
     $issue_filter  = isset($_GET['issue']) ? \sanitize_key((string) $_GET['issue']) : '';
@@ -175,19 +175,6 @@ private function why_label(string $why): string {
       echo '<a class="button" href="' . esc_url($this->build_url(['source' => $k])) . '">' . esc_html($label) . '</a> ';
     }
     echo '</p>';
-
-    // echo '<p><strong>Issue:</strong> ';
-    // $issue_map = [
-    //   '' => 'All',
-    //   'missing_alt' => 'Missing alt',
-    //   'alt_too_short' => 'Too short',
-    //   'alt_generic' => 'Too generic',
-    //   'alt_looks_like_filename' => 'Looks like filename',
-    // ];
-    // foreach ($issue_map as $k => $label) {
-    //   echo '<a class="button" href="' . esc_url($this->build_url(['issue' => $k])) . '">' . esc_html($label) . '</a> ';
-    // }
-    // echo '</p>';
 
     echo '<form method="get" style="margin: 12px 0;">';
     echo '<input type="hidden" name="page" value="fatm-results" />';
@@ -312,15 +299,6 @@ private function why_label(string $why): string {
           echo '<a style="background: #999; border-radius: 4px;" href="' . \esc_url($edit_link) . '" style="flex:0 0 auto;">' . $thumb . '</a>';
         }
 
-        // text meta
-        echo '<div style="min-width:0;">';
-        // echo '<a href="' . \esc_url($edit_link) . '"><strong>' . \esc_html($title ?: ('Attachment #' . $id)) . '</strong></a>';
-
-        if ($file_name) {
-          // echo '<div class="description" style="margin-top:2px;">' . \esc_html($file_name) . '</div>';
-        }
-
-        echo '</div>'; // meta
         echo '</div>'; // flex wrapper
 
       } elseif ($img_src !== '') {
@@ -385,37 +363,4 @@ private function why_label(string $why): string {
     echo '</tbody></table>';
     echo '</div>';
   }
-
-  // public function render(): void {
-  //   if (!\current_user_can('manage_options')) {
-  //     \wp_die('You do not have permission to access this page.');
-  //   }
-
-  //   $job = Jobs::get();
-
-  //   echo '<div class="wrap">';
-  //   echo '<h1>Alt Text Monitor Results</h1>';
-
-  //   if (!$job || empty($job['id'])) {
-  //     echo '<p>No scan has been run yet.</p>';
-  //     echo '</div>';
-  //     return;
-  //   }
-
-  //   $findings = Findings::get((string) $job['id']);
-  //   if (!$findings || empty($findings['items'])) {
-  //     echo '<p>No findings recorded for the last scan.</p>';
-  //     echo '</div>';
-  //     return;
-  //   }
-
-  //   $items = $findings['items'];
-
-  //   foreach($items as $item){
-  //     echo '<pre style="background: #fff;padding:12px;border:1px solid #ccd0d4;max-width:900px;overflow:auto;">';
-  //     print_r($item);
-  //     echo '</pre>';
-  //   }
-
-  // }
 }

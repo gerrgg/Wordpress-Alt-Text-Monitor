@@ -39,7 +39,6 @@ final class DashboardWidget {
       }
     }
 
-    // Flash notice (optional)
     if (!empty($_GET['fatm_quick_scan'])) {
       echo '<div class="notice notice-success inline"><p>Quick scan completed.</p></div>';
     }
