@@ -22,6 +22,7 @@ final class Actions {
     add_action('wp_ajax_fatm_run_step', [$this, 'run_step']);
 
     add_action('admin_post_fatm_run_quick_scan', [$this, 'run_quick_scan']);
+    add_action('fatm_run_quick_scan_internal', [$this, 'run_quick_scan_internal']);
   }
 
   public function start_scan(): void {
@@ -138,12 +139,18 @@ final class Actions {
 
     check_admin_referer('fatm_quick_scan');
 
-    // Build settings: force content scope to last 5 posts
+    $this->run_quick_scan_internal();
+
+    wp_safe_redirect(admin_url('index.php?fatm_quick_scan=1'));
+    exit;
+  }
+
+  public function run_quick_scan_internal(): void {
     $settings = Settings::get_effective();
     $settings['scan']['scope'] = 'last_posts';
     $settings['scan']['last_posts'] = 5;
 
-    $job_id = wp_generate_uuid4();
+    $job_id = \wp_generate_uuid4();
 
     Findings::init($job_id);
 
@@ -151,7 +158,7 @@ final class Actions {
     $scanner = new ContentScanner($evaluator);
 
     $offset = 0;
-    $limit = 10; // small batch; last_posts=5 caps total anyway
+    $limit = 10;
 
     do {
       $res = $scanner->scan_batch($offset, $limit, $settings);
@@ -162,11 +169,7 @@ final class Actions {
 
     update_option('fatm_last_quick_job_id', $job_id, false);
     update_option('fatm_last_quick_ran_at', time(), false);
-
-    wp_safe_redirect(admin_url('index.php?fatm_quick_scan=1'));
-    exit;
   }
-
 
   private function return_url(): string {
     // Return to dashboard
