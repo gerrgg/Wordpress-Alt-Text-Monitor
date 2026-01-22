@@ -24,15 +24,17 @@ define('FATM_URL', plugin_dir_url(__FILE__));
  * Core
  */
 require_once FATM_PATH . 'src/Plugin.php';
-require_once FATM_PATH . 'src/Admin/Admin.php';
 require_once FATM_PATH . 'src/Support/Assets.php';
 require_once FATM_PATH . 'src/Findings/Findings.php';
 require_once FATM_PATH . 'src/Jobs/Jobs.php';
-require_once FATM_PATH . 'src/Scan/MediaScanner.php';
+require_once FATM_PATH . 'src/Admin/Admin.php';
 require_once FATM_PATH . 'src/Admin/Actions.php';
 require_once FATM_PATH . 'src/Admin/Pages/ResultsPage.php';
+require_once FATM_PATH . 'src/Admin/Dashboard/DashboardWidget.php';
 require_once FATM_PATH . 'src/Scan/AltEvaluator.php';
+require_once FATM_PATH . 'src/Scan/MediaScanner.php';
 require_once FATM_PATH . 'src/Scan/ContentScanner.php';
+
 
 
 

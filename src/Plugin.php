@@ -6,12 +6,15 @@ namespace Floodlight\AltTextMonitor;
 use Floodlight\AltTextMonitor\Admin\Admin;
 use Floodlight\AltTextMonitor\Support\Assets;
 use Floodlight\AltTextMonitor\Admin\Actions;
+use Floodlight\AltTextMonitor\Admin\Dashboard\DashboardWidget;
+
 
 final class Plugin {
   private static ?Plugin $instance = null;
 
   private Admin $admin;
   private Assets $assets;
+  private DashboardWidget $dashboard_widget;
 
 
   private Actions $actions;
@@ -27,6 +30,7 @@ final class Plugin {
     $this->admin = new Admin();
     $this->assets = new Assets();
     $this->actions = new Actions();
+    $this->dashboard_widget = new DashboardWidget();
   }
 
   public function init(): void {
@@ -35,13 +39,14 @@ final class Plugin {
     add_action('admin_enqueue_scripts', [$this->assets, 'enqueue_admin_assets']);
 
     $this->actions->register();
+    $this->dashboard_widget->register();
   }
 
   public static function activate(bool $network_wide): void {
-    // Step 1: nothing needed yet.
+
   }
 
   public static function deactivate(bool $network_wide): void {
-    // Step 1: nothing needed yet.
+
   }
 }
