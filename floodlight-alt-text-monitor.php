@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Floodlight Alt Text Monitor
  * Description: Scans WordPress sites for images and highlights missing or poor alt text. Multisite-ready.
- * Version: 0.1.0
+ * Version: 1.0.0
  * Author: Floodlight Design
  * Network: true
  * Requires at least: 6.0
