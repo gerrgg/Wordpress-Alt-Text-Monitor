@@ -29,14 +29,12 @@ require_once FATM_PATH . 'src/Findings/Findings.php';
 require_once FATM_PATH . 'src/Jobs/Jobs.php';
 require_once FATM_PATH . 'src/Admin/Admin.php';
 require_once FATM_PATH . 'src/Admin/Actions.php';
-require_once FATM_PATH . 'src/Admin/Pages/ResultsPage.php';
 require_once FATM_PATH . 'src/Admin/Dashboard/DashboardWidget.php';
 require_once FATM_PATH . 'src/Scan/AltEvaluator.php';
 require_once FATM_PATH . 'src/Scan/MediaScanner.php';
 require_once FATM_PATH . 'src/Scan/ContentScanner.php';
 require_once FATM_PATH . 'src/Admin/Support/Debug.php';
 require_once FATM_PATH . 'src/Cron/Cron.php';
-
 
 
 /**
@@ -52,6 +50,8 @@ require_once FATM_PATH . 'src/Admin/Pages/DashboardPage.php';
 require_once FATM_PATH . 'src/Admin/Pages/SettingsPage.php';
 require_once FATM_PATH . 'src/Admin/Pages/NetworkDashboardPage.php';
 require_once FATM_PATH . 'src/Admin/Pages/NetworkSettingsPage.php';
+require_once FATM_PATH . 'src/Admin/Pages/RecentAltTextPage.php';
+require_once FATM_PATH . 'src/Admin/Pages/ResultsPage.php';
 
 
 register_activation_hook(__FILE__, function ($network_wide) {

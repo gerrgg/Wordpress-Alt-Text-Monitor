@@ -9,6 +9,7 @@ use Floodlight\AltTextMonitor\Admin\Pages\NetworkDashboardPage;
 use Floodlight\AltTextMonitor\Admin\Pages\NetworkSettingsPage;
 use Floodlight\AltTextMonitor\Admin\Pages\ResultsPage;
 use Floodlight\AltTextMonitor\Admin\Support\Debug;
+use Floodlight\AltTextMonitor\Admin\Pages\RecentAltTextPage;
 
 final class Admin {
   private DashboardPage $dashboard;
@@ -23,6 +24,7 @@ final class Admin {
     $this->network_dashboard = new NetworkDashboardPage();
     $this->network_settings = new NetworkSettingsPage();
     $this->results = new ResultsPage();
+    $this->recent_alt_text = new RecentAltTextPage();
   }
 
   public function register_site_menu(): void {
@@ -31,9 +33,27 @@ final class Admin {
       'Alt Text Monitor',
       'manage_options',
       'fatm',
-      [$this->dashboard, 'render'],
+      [$this->recent_alt_text, 'render'],
       'dashicons-visibility',
       80
+    );
+
+    add_submenu_page(
+      'fatm',
+      'Scanner',
+      'Scanner',
+      'manage_options',
+      'fatm-recent-alt-text',
+      [$this->dashboard, 'render']
+    );
+
+     add_submenu_page(
+      'fatm',
+      'Results',
+      'Results',
+      'manage_options',
+      'fatm-results',
+      [$this->results, 'render']
     );
 
     add_submenu_page(
@@ -43,15 +63,6 @@ final class Admin {
       'manage_options',
       'fatm-settings',
       [$this->settings, 'render']
-    );
-
-    add_submenu_page(
-      'fatm',
-      'Results',
-      'Results',
-      'manage_options',
-      'fatm-results',
-      [$this->results, 'render']
     );
 
   }

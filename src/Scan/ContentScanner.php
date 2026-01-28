@@ -10,6 +10,15 @@ final class ContentScanner {
     $this->evaluator = $evaluator ?: new AltEvaluator();
   }
 
+  public function scan_single_post(int $post_id, array $settings): array {
+    if ($post_id <= 0) return [];
+
+    // Reuse your existing logic. If you already have scan_post_acf($post_id, $settings), call that.
+    // If scan_post_acf is private, either make it protected/public, or move the core into a reusable method.
+    return $this->scan_post_acf($post_id, $settings);
+  }
+
+
   /**
    * @return array{rows: array<int,array>, done: bool, next_offset: int, total: int}
    */
